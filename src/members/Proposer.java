@@ -1,5 +1,6 @@
 package members;
 
+
 import constant.FixedValues;
 
 import java.io.*;
@@ -9,18 +10,18 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Scanner;
 
-public class M1 {
-    private static final int disconnectionRate = 0; //M1's network is perfect
-    private static int port = 4561;
+public class Proposer {
+    private static final int disconnectionRate = 5; //5%
+    private static int port = 4560;
     private static ServerSocket serverSocket;
-    public Socket socket;
+    public Socket socket = null;
     public InputStreamReader inputStreamReader = null;
     public OutputStreamWriter outputStreamWriter = null;
     public BufferedReader bufferedReader = null;
     public BufferedWriter bufferedWriter = null;
     private static HashMap<String, String> map = new HashMap<>();
 
-    public M1(Socket socket) {
+    public Proposer(Socket socket) {
         this.socket = socket;
         try {
             inputStreamReader = new InputStreamReader(socket.getInputStream());
@@ -29,16 +30,17 @@ public class M1 {
             this.bufferedReader = new BufferedReader(inputStreamReader);
             this.bufferedWriter = new BufferedWriter(outputStreamWriter);
         } catch (IOException e) {
-            closeAll(socket, bufferedReader, bufferedWriter, inputStreamReader, outputStreamWriter);
+            closeAll();
         }
     }
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         String IP = FixedValues.hostIP;
         Acceptor acceptor = new Acceptor(port);// Listen for a connection
+        System.out.println("Proposer started on port:" + port);
         acceptor.startAcceptor();
-        
+
         Scanner scanner = new Scanner(System.in);
         while (true) {
             String input = scanner.nextLine();
@@ -55,12 +57,12 @@ public class M1 {
                             socket = new Socket(IP, targetPort);  //connect to other members
                         } catch (IOException e) {
                             if (e.getClass() == ConnectException.class)
-                                System.out.println("No member started on port:" + targetPort);
+                                System.out.println("No members on port:" + targetPort);
                             continue;
                         }
-                        M1 M1 = new M1(socket);
-                        M1.response();
-                        M1.vote();
+                        Proposer proposer = new Proposer(socket);
+                        proposer.response();
+                        proposer.vote();
                     }
                 }
             }
@@ -88,15 +90,21 @@ public class M1 {
                 e.printStackTrace();
             } finally {
                 System.out.println("Connection Stopped!");
-                closeAll(socket, bufferedReader, bufferedWriter, inputStreamReader, outputStreamWriter);
+                closeAll();
             }
         }).start();
+
+//        if (100 * Math.random() <= disconnectionRate) {
+//            //no response, pretend to be offline
+//        } else {
+//
+//        }
     }
 
     public void vote() {
         try {
             String msgToSend = "";
-            msgToSend = "ID:01, VALUE:1";
+            msgToSend = "ID:01, VALUE:3";
             bufferedWriter.write(msgToSend + "\n");
             bufferedWriter.newLine();
             bufferedWriter.flush();
@@ -105,7 +113,7 @@ public class M1 {
         }
     }
 
-    public void closeAll(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter, InputStreamReader inputStreamReader, OutputStreamWriter outputStreamWriter) {
+    public void closeAll() {
         try {
             if (socket != null)
                 socket.close();
@@ -117,9 +125,56 @@ public class M1 {
                 bufferedReader.close();
             if (bufferedWriter != null)
                 bufferedWriter.close();
-            System.exit(0);
+//            System.exit(0);
         } catch (IOException e) {
-            e.getStackTrace();
+            e.printStackTrace();
         }
     }
 }
+
+//class ProposerRequestHandler extends Thread {
+//    private Socket socket;
+//    private boolean hasStarted;
+//
+//    ProposerRequestHandler(Socket socket) {
+//        this.socket = socket;
+//    }
+//
+//    public void run() {
+//        InputStreamReader inputStreamReader = null;
+//        OutputStreamWriter outputStreamWriter = null;
+//        BufferedReader bufferedReader = null;
+//        BufferedWriter bufferedWriter = null;
+//
+//        try {
+//            inputStreamReader = new InputStreamReader(socket.getInputStream());
+//            outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
+//
+//            bufferedReader = new BufferedReader(inputStreamReader);
+//            bufferedWriter = new BufferedWriter(outputStreamWriter);
+//
+//            while (true) {
+//                StringBuilder msgReceived = new StringBuilder();
+//                String line = bufferedReader.readLine();
+//                while (line != null && !line.isEmpty()) {
+//                    msgReceived.append(line).append("\n");
+//                    line = bufferedReader.readLine();
+//                }
+//
+//                System.out.println(msgReceived);
+//
+//                String responseMsg = "received";
+//                bufferedWriter.write(responseMsg);
+//                bufferedWriter.newLine();
+//                bufferedWriter.flush();
+//
+//                if ("BYE".equalsIgnoreCase(msgReceived.toString())) {
+//                    break;
+//                }
+//                msgReceived.setLength(0);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//}
