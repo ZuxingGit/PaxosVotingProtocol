@@ -75,6 +75,10 @@ m3:
 	@cd $(OUTPUT_DIR);\
 	java members.M3
 	
+m4-9:
+	@cd $(OUTPUT_DIR);\
+	java members.M4_9
+	
 m4:
 	@cd $(OUTPUT_DIR);\
 	java members.M4

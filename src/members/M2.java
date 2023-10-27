@@ -39,7 +39,7 @@ public class M2 {
                         Proposer proposer = new Proposer(socket);
                         proposer.response();
                         proposer.vote();
-//                        socket.close();
+                        proposer.closeAll();
                     }
                 }
             }

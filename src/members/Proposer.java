@@ -35,7 +35,7 @@ public class Proposer {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String IP = FixedValues.hostIP;
         Acceptor acceptor = new Acceptor(port);// Listen for a connection
         System.out.println("Proposer started on port:" + port);
@@ -50,7 +50,6 @@ public class Proposer {
                 for (int targetPort :
                         ports) {
                     if (targetPort != port) {
-                        System.out.println(targetPort);
                         // connect to a member on this specific targetPort
                         Socket socket = null;
                         try {
@@ -63,6 +62,7 @@ public class Proposer {
                         Proposer proposer = new Proposer(socket);
                         proposer.response();
                         proposer.vote();
+                        proposer.closeAll();
                     }
                 }
             }
@@ -87,9 +87,9 @@ public class Proposer {
                     msgReceived.setLength(0);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             } finally {
-                System.out.println("Connection Stopped!");
+//                System.out.println("Connection Stopped!");
                 closeAll();
             }
         }).start();
