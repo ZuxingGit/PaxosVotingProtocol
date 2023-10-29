@@ -15,6 +15,7 @@ public class Acceptor extends Thread {
 
     public Acceptor(int port) {
         this.port = port;
+        this.name = "M" + Integer.toString(port).substring(3);
     }
 
     public Acceptor(int port, int disconnectionRate) {
@@ -26,6 +27,7 @@ public class Acceptor extends Thread {
     public void startAcceptor() {
         try {
             serverSocket = new ServerSocket(port);
+            System.out.println(name + " started on port:" + port);
             this.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -41,10 +43,8 @@ public class Acceptor extends Thread {
         running = true;
         while (running) {
             try {
-//                System.out.println("Listening for a connection...");
                 Socket socket = serverSocket.accept();
-                System.out.println(name + " Received a connection.");
-                AcceptorRequestHandler acceptorRequestHandler = new AcceptorRequestHandler(socket, map, disconnectionRate);
+                AcceptorRequestHandler acceptorRequestHandler = new AcceptorRequestHandler(socket, map, disconnectionRate, name);
                 acceptorRequestHandler.start();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -64,14 +64,15 @@ public class Acceptor extends Thread {
 
 class AcceptorRequestHandler extends Thread {
     private Socket socket;
-    private String value;
     private HashMap<String, String> map;
     private int disconnectionRate;
+    private String name;
 
-    AcceptorRequestHandler(Socket socket, HashMap<String, String> map, int disconnectionRate) {
+    AcceptorRequestHandler(Socket socket, HashMap<String, String> map, int disconnectionRate, String name) {
         this.socket = socket;
         this.map = map;
         this.disconnectionRate = disconnectionRate;
+        this.name = name;
     }
 
     public void run() {
@@ -94,38 +95,41 @@ class AcceptorRequestHandler extends Thread {
                     msgReceived.append(line).append("\n");
                     line = bufferedReader.readLine();
                 }
+                if (msgReceived == null || msgReceived.toString().isEmpty()) {
+                    // System.out.println("The opposite member disconnected");
+                    break;
+                }
 
                 if (100 * Math.random() <= disconnectionRate) {
-                    //no response, pretend to be offline
-                    continue;
+                    System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
+                    break;
                 } else {
-                    System.out.println(msgReceived);
+                    System.out.println(name + " received from " + msgReceived.toString().trim());
                     String responseMsg = "";
-                    if (msgReceived == null || msgReceived.toString().isEmpty()) {
-                        // System.out.println("The opposite member disconnected");
-                        break;
-                    } else if (msgReceived.toString().contains("PREPARE")) {
-                        int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("PREPARE:") + 8).trim());
-                        if (map.containsKey("ID") && Integer.parseInt(map.get("ID")) <= ID) {
+                    if (msgReceived.toString().contains("PREPARE") && msgReceived.toString().contains("ID")) {
+                        int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("ID:") + 3).trim());
+                        if (map.containsKey("ID") && ID <= Integer.parseInt(map.get("ID"))) {
                             continue;
                         } else {
                             map.put("ID", String.valueOf(ID));
-                            responseMsg += "PROMISE ID:" + ID;
+                            responseMsg += "PROMISE> ID:" + ID;
                             if (map.containsKey("acceptedID") && map.containsKey("acceptedValue")) {
-                                responseMsg += "acceptedID:" + map.get("acceptedValue:") + map.get("acceptedValue");
+                                responseMsg += " acceptedID:" + map.get("acceptedID") + " acceptedValue:" + map.get("acceptedValue");
                             }
                         }
-                    } else if (msgReceived.toString().contains("VALUE")) {
-                        value = msgReceived.substring(msgReceived.indexOf("VALUE:") + 6).trim();
-                        //                    if (map.containsKey("value"))
-                        //                        System.out.println(map.get("value"));
-                        //                    
-                        //                    System.out.println(value);
-                        map.put("value", value);
+                    } else if (msgReceived.toString().contains("PROPOSE") && msgReceived.toString().contains("value")) {
+                        int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("ID:") + 3, msgReceived.indexOf("value:")).trim());
+                        String value = msgReceived.substring(msgReceived.indexOf("value:") + 6).trim();
+                        if (map.containsKey("ID") && ID != Integer.parseInt(map.get("ID"))) {
+                            continue;
+                        } else {
+                            map.put("acceptedID", String.valueOf(ID));
+                            map.put("acceptedValue", value);
+                            responseMsg += "ACCEPT> ID:" + ID + " value:" + value;
+                        }
                     }
-
-
-                    bufferedWriter.write(responseMsg + "\n");
+                    System.out.println(name + " answers: " + responseMsg + "\n");
+                    bufferedWriter.write(name + ": " + responseMsg + "\n");
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
                 }

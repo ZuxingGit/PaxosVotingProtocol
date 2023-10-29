@@ -1,28 +1,22 @@
 package members;
 
-
-import constant.FixedValues;
+import utils.LamportID;
 
 import java.io.*;
-import java.net.ConnectException;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Scanner;
 
 public class Proposer {
-    private static final int disconnectionRate = 5; //5%
+    private int disconnectionRate = 5; //5%
     private static int port = 4560;
-    private static ServerSocket serverSocket;
     public Socket socket = null;
     public InputStreamReader inputStreamReader = null;
     public OutputStreamWriter outputStreamWriter = null;
     public BufferedReader bufferedReader = null;
     public BufferedWriter bufferedWriter = null;
-    private static HashMap<String, String> map = new HashMap<>();
 
-    public Proposer(Socket socket) {
+    public Proposer(Socket socket, int disconnectionRate) {
         this.socket = socket;
+        this.disconnectionRate = disconnectionRate;
         try {
             inputStreamReader = new InputStreamReader(socket.getInputStream());
             outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
@@ -34,83 +28,47 @@ public class Proposer {
         }
     }
 
-
-    public static void main(String[] args) throws IOException {
-        String IP = FixedValues.hostIP;
-        Acceptor acceptor = new Acceptor(port);// Listen for a connection
-        System.out.println("Proposer started on port:" + port);
-        acceptor.startAcceptor();
-
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String input = scanner.nextLine();
-
-            if ("VOTE".equalsIgnoreCase(input)) {
-                int[] ports = FixedValues.ports;
-                for (int targetPort :
-                        ports) {
-                    if (targetPort != port) {
-                        // connect to a member on this specific targetPort
-                        Socket socket = null;
-                        try {
-                            socket = new Socket(IP, targetPort);  //connect to other members
-                        } catch (IOException e) {
-                            if (e.getClass() == ConnectException.class)
-                                System.out.println("No members on port:" + targetPort);
-                            continue;
-                        }
-                        Proposer proposer = new Proposer(socket);
-                        proposer.response();
-                        proposer.vote();
-                        proposer.closeAll();
-                    }
-                }
-            }
-        }
-    }
-
-    public void response() {
-        new Thread(() -> {
-            StringBuilder msgReceived = new StringBuilder();
-            try {
-                while (socket.isConnected()) {
-                    String line = bufferedReader.readLine();
-                    while (line != null && !line.isEmpty()) {
-                        msgReceived.append(line).append("\n");
-                        line = bufferedReader.readLine();
-                    }
-                    if (msgReceived == null || msgReceived.toString().isEmpty()) {
-                        System.out.println("The opposite member disconnected");
-                        break;
-                    }
-                    System.out.println(msgReceived);
-                    msgReceived.setLength(0);
-                }
-            } catch (IOException e) {
-//                e.printStackTrace();
-            } finally {
-//                System.out.println("Connection Stopped!");
-                closeAll();
-            }
-        }).start();
-
-//        if (100 * Math.random() <= disconnectionRate) {
-//            //no response, pretend to be offline
-//        } else {
-//
+//    public String getResponse() {
+//        StringBuilder msgReceived = new StringBuilder();
+//        try {
+//            while (socket.isConnected()) {
+//                String line = bufferedReader.readLine();
+//                while (line != null && !line.isEmpty()) {
+//                    msgReceived.append(line).append("\n");
+//                    line = bufferedReader.readLine();
+//                }
+//                if (msgReceived == null || msgReceived.toString().isEmpty()) {
+//                    System.out.println("The opposite member disconnected");
+//                    break;
+//                }
+//                
+//                msgReceived.setLength(0);
+//            }
+//        } catch (IOException e) {
+////                e.printStackTrace();
+//        } finally {
+////                System.out.println("Connection Stopped!");
+//            closeAll();
 //        }
-    }
+//        return msgReceived.toString();
+//    }
 
-    public void vote() {
+    public String vote(String msg) {
+        StringBuilder msgReceived = msgReceived = new StringBuilder();
         try {
-            String msgToSend = "";
-            msgToSend = "ID:01, VALUE:3";
-            bufferedWriter.write(msgToSend + "\n");
+            bufferedWriter.write(msg + "\n");
             bufferedWriter.newLine();
             bufferedWriter.flush();
+
+            String line = bufferedReader.readLine();
+            while (line != null && !line.isEmpty()) {
+                msgReceived.append(line).append("\n");
+                line = bufferedReader.readLine();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return msgReceived.toString();
     }
 
     public void closeAll() {

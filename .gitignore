@@ -28,3 +28,13 @@ bin/
 ### Mac OS ###
 .DS_Store
 /.idea/
+/classes/constant/FixedValues.class
+/classes/members/Acceptor.class
+/classes/members/AcceptorRequestHandler.class
+/classes/members/M1.class
+/classes/members/M2.class
+/classes/members/M3.class
+/classes/members/M4_9.class
+/classes/members/Proposer.class
+/classes/Main.class
+/classes/utils/LamportID.class

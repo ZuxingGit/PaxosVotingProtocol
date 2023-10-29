@@ -1,102 +1,110 @@
 package members;
 
 import constant.FixedValues;
+import utils.LamportID;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class M3 {
     private static final int disconnectionRate = 20; //Mostly online, occasionally offline
-    public Socket socket;
-    public InputStreamReader inputStreamReader = null;
-    public OutputStreamWriter outputStreamWriter = null;
-    public BufferedReader bufferedReader = null;
-    public BufferedWriter bufferedWriter = null;
-
-    public M3(Socket socket) {
-        this.socket = socket;
-        try {
-            inputStreamReader = new InputStreamReader(socket.getInputStream());
-            outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
-
-            this.bufferedReader = new BufferedReader(inputStreamReader);
-            this.bufferedWriter = new BufferedWriter(outputStreamWriter);
-        } catch (IOException e) {
-            closeAll(socket, bufferedReader, bufferedWriter, inputStreamReader, outputStreamWriter);
-        }
-    }
-
+    private static final int port = 4563;
+    private static final String name = "M3";
+    private static Long ID; //proposal number
+    private static String value = name + "_become_the_president"; //proposal value
 
     public static void main(String[] args) throws IOException {
         String IP = FixedValues.hostIP;
-        int port = 4560;
-        System.out.println("M3 start on port:" + port);
-        Socket socket = new Socket(IP, port);
-        M3 M3 = new M3(socket);
-        M3.response();
-        M3.vote();
-    }
+        Acceptor acceptor = new Acceptor(port, disconnectionRate);
+        acceptor.startAcceptor();
 
-    public void response() {
-        new Thread(() -> {
-            StringBuilder msgReceived = new StringBuilder();
-            try {
-                while (socket.isConnected()) {
-                    String line = bufferedReader.readLine();
-                    while (line != null && !line.isEmpty()) {
-                        msgReceived.append(line).append("\n");
-                        line = bufferedReader.readLine();
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            String input = scanner.nextLine();
+            if ("VOTE".equalsIgnoreCase(input)) {
+                int[] ports = FixedValues.ports;
+                ID = LamportID.getNextNumber();
+                int countPromise = 0;
+                int countAccept = 0;
+                for (int targetPort :
+                        ports) {
+                    if (targetPort != port) {
+                        // connect to a member on this specific targetPort
+                        Socket socket;
+                        try {
+                            socket = new Socket(IP, targetPort);  //connect to other members
+                        } catch (IOException e) {
+                            if (e.getClass() == ConnectException.class)
+                                System.out.println("No member started on port:" + targetPort);
+                            continue;
+                        }
+                        Proposer proposer = new Proposer(socket, disconnectionRate);
+                        String msgToSend = "";
+                        msgToSend += "PREPARE> ID:" + ID;
+                        String msgReceived = proposer.vote(name + ": " + msgToSend);
+
+                        if (100 * Math.random() <= disconnectionRate) {
+                            System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
+                            continue;
+                        } else {
+                            System.out.println(name + " received from " + msgReceived);
+                            if (msgReceived.toString().contains("PROMISE") && msgReceived.toString().contains("ID")) {
+                                countPromise++;
+                                if (msgReceived.toString().contains("acceptedID") && msgReceived.toString().contains("acceptedValue")) {
+                                    Long acceptedID = Long.valueOf(msgReceived.substring(msgReceived.indexOf("acceptedID:") + 11, msgReceived.indexOf("acceptedValue:")).trim());
+                                    if (acceptedID > ID) {
+                                        ID = acceptedID;
+                                        value = msgReceived.substring(msgReceived.indexOf("acceptedValue:") + 14).trim();
+                                    }
+                                }
+                            }
+                        }
+                        proposer.closeAll();
                     }
-                    if (msgReceived == null || msgReceived.toString().isEmpty()) {
-                        System.out.println("The opposite member disconnected");
-                        break;
+                }
+                if (countPromise >= ports.length / 2 + 1) {// half+1 means a majority, they promised
+                    for (int targetPort :
+                            ports) {
+                        if (targetPort != port) {
+                            // connect to a member on this specific targetPort
+                            Socket socket;
+                            try {
+                                socket = new Socket(IP, targetPort);  //connect to other members
+                            } catch (IOException e) {
+                                if (e.getClass() == ConnectException.class)
+                                    System.out.println("No member started on port:" + targetPort);
+                                continue;
+                            }
+                            Proposer proposer = new Proposer(socket, disconnectionRate);
+                            String msgToSend = "";
+                            msgToSend += "PROPOSE> ID:" + ID + " value:" + value;
+                            String msgReceived = proposer.vote(name + ": " + msgToSend);
+
+                            if (100 * Math.random() <= disconnectionRate) {
+                                System.out.println(name + "is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
+                                continue;
+                            } else {
+                                System.out.println(name + " received from " + msgReceived);
+                                if (msgReceived.toString().contains("ACCEPT") && msgReceived.toString().contains("ID") && msgReceived.toString().contains("value")) {
+                                    Long receivedID = Long.valueOf(msgReceived.substring(msgReceived.indexOf("ID:") + 3, msgReceived.indexOf("value:")).trim());
+                                    String receivedValue = msgReceived.substring(msgReceived.indexOf("value:") + 6).trim();
+                                    if (ID == receivedID && value.equals(receivedValue)) {
+                                        countAccept++;
+                                    }
+                                }
+                            }
+                            proposer.closeAll();
+                        }
                     }
-                    System.out.println(msgReceived);
-                    msgReceived.setLength(0);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                System.out.println("Connection Stopped!");
-            }
-        }).start();
-    }
-
-    public void vote() {
-        try {
-            Scanner scanner = new Scanner(System.in);
-            while (true) {
-                String input = scanner.nextLine();
-//                System.out.println();
-                String msgToSend = "";
-                if ("VOTE".equalsIgnoreCase(input)) {
-                    msgToSend = "ID:01, VALUE:2";
-                    bufferedWriter.write(msgToSend + "\n");
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
+                    if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted)
+                        acceptor.map.put("acceptedID", String.valueOf(ID));
+                        acceptor.map.put("acceptedValue", value);
+                        System.out.println(value + " accepted by the majority!");
+                    }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void closeAll(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter, InputStreamReader inputStreamReader, OutputStreamWriter outputStreamWriter) {
-        try {
-            if (socket != null)
-                socket.close();
-            if (inputStreamReader != null)
-                inputStreamReader.close();
-            if (outputStreamWriter != null)
-                outputStreamWriter.close();
-            if (bufferedReader != null)
-                bufferedReader.close();
-            if (bufferedWriter != null)
-                bufferedWriter.close();
-            System.exit(0);
-        } catch (IOException e) {
-            e.getStackTrace();
         }
     }
 }
