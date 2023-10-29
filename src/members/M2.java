@@ -15,7 +15,7 @@ public class M2 {
     private static Long ID; //proposal number
     private static String value = name + "_become_the_president"; //proposal value
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         String IP = FixedValues.hostIP;
         Acceptor acceptor = new Acceptor(port, disconnectionRate);
         acceptor.startAcceptor();
@@ -37,17 +37,20 @@ public class M2 {
                             socket = new Socket(IP, targetPort);  //connect to other members
                         } catch (IOException e) {
                             if (e.getClass() == ConnectException.class)
-                                System.out.println("No member started on port:" + targetPort);
+                                System.out.println("No member started on port:" + targetPort + "\n");
                             continue;
                         }
                         Proposer proposer = new Proposer(socket, disconnectionRate);
                         String msgToSend = "";
                         msgToSend += "PREPARE> ID:" + ID;
                         String msgReceived = proposer.vote(name + ": " + msgToSend);
+                        if (msgReceived == null || msgReceived.toString().isEmpty()) {
+                            System.out.println("M" + (targetPort % 10) + " is offline! No response.\n");
+                            continue;
+                        }
 
                         if (100 * Math.random() <= disconnectionRate) {
                             System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
-                            proposer.closeAll();
                             continue;
                         } else {
                             System.out.println(name + " received from " + msgReceived);
@@ -75,17 +78,20 @@ public class M2 {
                                 socket = new Socket(IP, targetPort);  //connect to other members
                             } catch (IOException e) {
                                 if (e.getClass() == ConnectException.class)
-                                    System.out.println("No member started on port:" + targetPort);
+                                    System.out.println("No member started on port:" + targetPort + "\n");
                                 continue;
                             }
                             Proposer proposer = new Proposer(socket, disconnectionRate);
                             String msgToSend = "";
                             msgToSend += "PROPOSE> ID:" + ID + " value:" + value;
                             String msgReceived = proposer.vote(name + ": " + msgToSend);
+                            if (msgReceived == null || msgReceived.toString().isEmpty()) {
+                                System.out.println("M" + (targetPort % 10) + " is offline! No response.\n");
+                                continue;
+                            }
 
                             if (100 * Math.random() <= disconnectionRate) {
-                                System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
-                                proposer.closeAll();
+                                System.out.println(name + "is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
                                 continue;
                             } else {
                                 System.out.println(name + " received from " + msgReceived);
@@ -100,7 +106,7 @@ public class M2 {
                             proposer.closeAll();
                         }
                     }
-                    if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted)
+                    if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted
                         acceptor.map.put("acceptedID", String.valueOf(ID));
                         acceptor.map.put("acceptedValue", value);
                         System.out.println(value + " accepted by the majority!");

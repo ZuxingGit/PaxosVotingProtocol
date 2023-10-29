@@ -109,7 +109,7 @@ class AcceptorRequestHandler extends Thread {
                     if (msgReceived.toString().contains("PREPARE") && msgReceived.toString().contains("ID")) {
                         int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("ID:") + 3).trim());
                         if (map.containsKey("ID") && ID <= Integer.parseInt(map.get("ID"))) {
-                            continue;
+                            responseMsg = "fail";
                         } else {
                             map.put("ID", String.valueOf(ID));
                             responseMsg += "PROMISE> ID:" + ID;
@@ -121,7 +121,7 @@ class AcceptorRequestHandler extends Thread {
                         int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("ID:") + 3, msgReceived.indexOf("value:")).trim());
                         String value = msgReceived.substring(msgReceived.indexOf("value:") + 6).trim();
                         if (map.containsKey("ID") && ID != Integer.parseInt(map.get("ID"))) {
-                            continue;
+                            responseMsg = "fail";
                         } else {
                             map.put("acceptedID", String.valueOf(ID));
                             map.put("acceptedValue", value);

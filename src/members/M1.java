@@ -15,7 +15,7 @@ public class M1 {
     private static Long ID; //proposal number
     private static String value = name + "_become_the_president"; //proposal value
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         String IP = FixedValues.hostIP;
         Acceptor acceptor = new Acceptor(port, disconnectionRate);
         acceptor.startAcceptor();
@@ -106,7 +106,7 @@ public class M1 {
                             proposer.closeAll();
                         }
                     }
-                    if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted)
+                    if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted
                         acceptor.map.put("acceptedID", String.valueOf(ID));
                         acceptor.map.put("acceptedValue", value);
                         System.out.println(value + " accepted by the majority!");
