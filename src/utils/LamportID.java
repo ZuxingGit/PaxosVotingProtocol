@@ -17,4 +17,8 @@ public class LamportID {
         maxId += 1;
         return maxId;
     }
+    
+    public static void setCurrentNumber(Long num) {
+        maxId = num;
+    }
 }

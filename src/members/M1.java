@@ -28,6 +28,7 @@ public class M1 {
                 ID = LamportID.getNextNumber();
                 int countPromise = 0;
                 int countAccept = 0;
+                Long maxAcceptedId = 0L;
                 for (int targetPort :
                         ports) {
                     if (targetPort != port) {
@@ -55,14 +56,25 @@ public class M1 {
                         } else {
                             System.out.println(name + " received from " + msgReceived);
                             if (msgReceived.toString().contains("PROMISE") && msgReceived.toString().contains("ID")) {
-                                countPromise++;
                                 if (msgReceived.toString().contains("acceptedID") && msgReceived.toString().contains("acceptedValue")) {
-                                    Long acceptedID = Long.valueOf(msgReceived.substring(msgReceived.indexOf("acceptedID:") + 11, msgReceived.indexOf("acceptedValue:")).trim());
-                                    if (acceptedID > ID) {
-                                        ID = acceptedID;
-                                        value = msgReceived.substring(msgReceived.indexOf("acceptedValue:") + 14).trim();
+                                    Long idFromPromise = Long.valueOf(msgReceived.substring(msgReceived.indexOf("ID:") + 3, msgReceived.indexOf("acceptedID:")).trim());
+                                    if (idFromPromise == ID) {
+                                        Long acceptedID = Long.valueOf(msgReceived.substring(msgReceived.indexOf("acceptedID:") + 11, msgReceived.indexOf("acceptedValue:")).trim());
+                                        if (maxAcceptedId < acceptedID) {
+                                            maxAcceptedId = acceptedID;
+                                            value = msgReceived.substring(msgReceived.indexOf("acceptedValue:") + 14).trim();
+                                        }
+                                        countPromise++;
+                                    }
+                                } else {
+                                    Long idFromResponse = Long.valueOf(msgReceived.substring(msgReceived.indexOf("ID:") + 3).trim());
+                                    if (idFromResponse == ID) {
+                                        countPromise++;
                                     }
                                 }
+                            } else if (msgReceived.toString().contains("fail") && msgReceived.toString().contains("ID")) {
+                                Long idFromResponse = Long.valueOf(msgReceived.substring(msgReceived.indexOf("ID:") + 3).trim());
+                                LamportID.setCurrentNumber(idFromResponse); //synchronize the ID value to the biggest from all responses
                             }
                         }
                         proposer.closeAll();
@@ -92,7 +104,7 @@ public class M1 {
                             }
 
                             if (100 * Math.random() <= disconnectionRate) {
-                                System.out.println(name + "is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
+                                System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
                                 continue;
                             } else {
                                 System.out.println(name + " received from " + msgReceived);
