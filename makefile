@@ -17,7 +17,7 @@ JDFLAGS     := -sourcepath $(SOURCE_DIR)        \
  SHELL       := /bin/bash
  
 .PHONY: all
-all: compile TXT_TARGS
+all: compile #TXT_TARGS
 
 hello:
 	@echo $(all_javas)
