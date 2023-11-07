@@ -42,14 +42,14 @@ $(all_javas):
 javadoc: $(all_javas)
 	$(JAVADOC) $(JDFLAGS) @$<
 
-SRC_DIR := ./src/main/java/com/DS/server/content
-DEST_DIR := ./classes/com/DS/server/content
-FILES := source.txt
-
-TXT_TARGS : $(DEST_DIR)/$(FILES)
-
-$(DEST_DIR)/%.txt: $(SRC_DIR)/%.txt
-	cp -f $< $@
+#SRC_DIR := ./src/main/java/com/DS/server/content
+#DEST_DIR := ./classes/com/DS/server/content
+#FILES := source.txt
+#
+#TXT_TARGS : $(DEST_DIR)/$(FILES)
+#
+#$(DEST_DIR)/%.txt: $(SRC_DIR)/%.txt
+#	cp -f $< $@
 
 .PHONY: clean
 clean:
@@ -102,15 +102,6 @@ m8:
 m9:
 	@cd $(OUTPUT_DIR);\
 	java members.M9
-	
-BatchGET%:
-	@cd $(OUTPUT_DIR);\
-	java com.DS.client.GETClient $(address) $*;\
-	get;\
-	java com.DS.client.GETClient $(address) $*;\
-	get;\
-	java com.DS.client.GETClient $(address) $*;\
-	get;
 
 where:
 	echo `pwd`

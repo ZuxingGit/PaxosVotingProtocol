@@ -6,7 +6,7 @@ import java.net.Socket;
 import java.util.HashMap;
 
 public class Acceptor extends Thread {
-    private int disconnectionRate = 0; // maybe try 5%??
+    private int disconnectionRate = 5; // maybe try 5%??
     private ServerSocket serverSocket;
     private int port;
     public HashMap<String, String> map = new HashMap<>();

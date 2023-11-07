@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class M3 {
-    private static final int disconnectionRate = 20; //Mostly online, occasionally offline
+    private static final int disconnectionRate = 20; //80% online, 20% offline
     private static final int port = 4563;
     private static final String name = "M3";
     private static Long ID; //proposal number
@@ -69,6 +69,7 @@ public class M3 {
                     }
                 }
                 if (countPromise >= ports.length / 2 + 1) {// half+1 means a majority, they promised
+                    System.out.println("Received Promises from " + countPromise + " acceptors");
                     for (int targetPort :
                             ports) {
                         if (targetPort != port) {
@@ -107,6 +108,7 @@ public class M3 {
                         }
                     }
                     if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted
+                        System.out.println("Received Accepts from " + countAccept + " acceptors");
                         acceptor.map.put("acceptedID", String.valueOf(ID));
                         acceptor.map.put("acceptedValue", value);
                         System.out.println(value + " accepted by the majority!");

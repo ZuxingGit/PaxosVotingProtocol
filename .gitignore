@@ -38,3 +38,7 @@ bin/
 /classes/members/Proposer.class
 /classes/Main.class
 /classes/utils/LamportID.class
+/src/Main2.java
+.gitignore
+/~$README.docx
+/classes/Main2.class

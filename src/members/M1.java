@@ -69,6 +69,7 @@ public class M1 {
                     }
                 }
                 if (countPromise >= ports.length / 2 + 1) {// half+1 means a majority, they promised
+                    System.out.println("Received Promises from " + countPromise + " acceptors");
                     for (int targetPort :
                             ports) {
                         if (targetPort != port) {
@@ -107,6 +108,7 @@ public class M1 {
                         }
                     }
                     if (countAccept >= ports.length / 2 + 1) {// half+1 means a majority, they accepted
+                        System.out.println("Received Accepts from " + countAccept + " acceptors");
                         acceptor.map.put("acceptedID", String.valueOf(ID));
                         acceptor.map.put("acceptedValue", value);
                         System.out.println(value + " accepted by the majority!");
