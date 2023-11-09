@@ -99,12 +99,20 @@ class AcceptorRequestHandler extends Thread {
                     // System.out.println("The opposite member disconnected");
                     break;
                 }
-
-                if (100 * Math.random() <= disconnectionRate) {
+                double random = 100 * Math.random();
+                if (random <= disconnectionRate) {
                     System.out.println(name + " is offline! Missed a message from " + msgReceived); //no response, pretend to be offline
                     break;
                 } else {
                     System.out.println(name + " received from " + msgReceived.toString().trim());
+                    if (random > disconnectionRate && random <= disconnectionRate + 5) {
+                        Thread.sleep(2000); //5% chance of small delay
+                        System.out.println("After a small delay of 2s...");
+                    } else if (random > disconnectionRate + 5 && random <= disconnectionRate + 10) {
+                        Thread.sleep(5000); //5% chance of large delay
+                        System.out.println("After a large delay of 5s...");
+                    }
+                    String sender = msgReceived.toString().substring(0, 2);
                     String responseMsg = "";
                     if (msgReceived.toString().contains("PREPARE") && msgReceived.toString().contains("ID")) {
                         int ID = Integer.parseInt(msgReceived.substring(msgReceived.indexOf("ID:") + 3).trim());
@@ -128,7 +136,7 @@ class AcceptorRequestHandler extends Thread {
                             responseMsg += "ACCEPT> ID:" + ID + " value:" + value;
                         }
                     }
-                    System.out.println(name + " answers: " + responseMsg + "\n");
+                    System.out.println(name + " answers " + sender + ": " + responseMsg + "\n");
                     bufferedWriter.write(name + ": " + responseMsg + "\n");
                     bufferedWriter.newLine();
                     bufferedWriter.flush();
@@ -145,7 +153,7 @@ class AcceptorRequestHandler extends Thread {
             outputStreamWriter.close();
             bufferedReader.close();
             bufferedWriter.close();
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
 //            e.printStackTrace();
         } finally {
             try {
