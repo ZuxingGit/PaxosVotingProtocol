@@ -78,30 +78,6 @@ m3:
 m4-9:
 	@cd $(OUTPUT_DIR);\
 	java members.M4_9
-	
-m4:
-	@cd $(OUTPUT_DIR);\
-	java members.M4
-	
-m5:
-	@cd $(OUTPUT_DIR);\
-	java members.M5
-	
-m6:
-	@cd $(OUTPUT_DIR);\
-	java members.M6
-	
-m7:
-	@cd $(OUTPUT_DIR);\
-	java members.M7
-	
-m8:
-	@cd $(OUTPUT_DIR);\
-	java members.M8
-	
-m9:
-	@cd $(OUTPUT_DIR);\
-	java members.M9
 
 where:
 	echo `pwd`
